@@ -27,7 +27,7 @@ jobs:
           test -f settings.gradle;
           test -f app/build.gradle;
           test -f app/src/main/AndroidManifest.xml;
-          test -f app/src/main/java/com/dsi/webviewtest/MainActivity.java
+          test -f app/src/main/java/com/dsi/real/MainActivity.java
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
