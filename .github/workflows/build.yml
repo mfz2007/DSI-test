@@ -1,4 +1,4 @@
-name: Build DSI Test APK
+name: Build DSI New Desktop APK
 
 on:
   workflow_dispatch:
@@ -11,15 +11,16 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Expand source
+      - name: Expand independent DSI project
         shell: bash
         run: >-
           set -e;
+          test -f DSI-new-source.zip;
           mkdir -p .dsi-source;
-          unzip -q -o DSI-source.zip -d .dsi-source;
+          unzip -q -o DSI-new-source.zip -d .dsi-source;
           project_root=$(find .dsi-source -type f -name settings.gradle -printf '%h\n' | head -n 1);
           test -n "$project_root";
           cp -a "$project_root"/. .;
@@ -28,7 +29,7 @@ jobs:
           test -f app/src/main/AndroidManifest.xml;
           test -f app/src/main/java/com/dsi/webviewtest/MainActivity.java
 
-      - name: Set up Java
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -40,17 +41,18 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Set up Gradle
+      - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "8.9"
 
-      - name: Build APK
+      - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DSI-v0.14-test-apk
+          name: DSI-new-desktop-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 30
