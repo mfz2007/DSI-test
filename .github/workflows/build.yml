@@ -1,4 +1,4 @@
-name: Build DSI Desktop HTML Skin APK v21
+name: Build DSI Desktop HTML Skin APK v22
 
 on:
   workflow_dispatch:
@@ -18,9 +18,9 @@ jobs:
         shell: bash
         run: >-
           set -e;
-          test -f DSI-desktop-html-v21-source.zip;
+          test -f DSI-desktop-html-v22-source.zip;
           mkdir -p .dsi-source;
-          unzip -q -o DSI-desktop-html-v21-source.zip -d .dsi-source;
+          unzip -q -o DSI-desktop-html-v22-source.zip -d .dsi-source;
           project_root=$(find .dsi-source -type f -name settings.gradle -printf '%h\n' | head -n 1);
           test -n "$project_root";
           cp -a "$project_root"/. .;
@@ -49,10 +49,41 @@ jobs:
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
-      - name: Upload APK
+      - name: Smoke test APK on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: Pixel_2
+          disable-animations: true
+          script: |
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb shell am force-stop com.dsi.exacthtml || true
+            adb shell am start -n com.dsi.exacthtml/com.dsi.real.MainActivity
+            sleep 10
+            adb logcat -d -t 500 > smoke-logcat.txt || true
+            adb exec-out screencap -p > smoke-screen.png || true
+            pid=$(adb shell pidof com.dsi.exacthtml | tr -d '\r')
+            test -n "$pid"
+            ! grep -q "FATAL EXCEPTION" smoke-logcat.txt
+
+      - name: Upload smoke-test evidence
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: DSI-desktop-html-skin-apk-v21
+          name: DSI-desktop-html-v22-smoke-test
+          path: |
+            smoke-logcat.txt
+            smoke-screen.png
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload APK
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: DSI-desktop-html-skin-apk-v22
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
