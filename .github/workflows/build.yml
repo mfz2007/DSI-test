@@ -1,4 +1,4 @@
-name: Build DSI Desktop HTML Skin APK v20
+name: Build DSI Desktop HTML Skin APK v21
 
 on:
   workflow_dispatch:
@@ -18,9 +18,9 @@ jobs:
         shell: bash
         run: >-
           set -e;
-          test -f DSI-desktop-html-v20-source.zip;
+          test -f DSI-desktop-html-v21-source.zip;
           mkdir -p .dsi-source;
-          unzip -q -o DSI-desktop-html-v20-source.zip -d .dsi-source;
+          unzip -q -o DSI-desktop-html-v21-source.zip -d .dsi-source;
           project_root=$(find .dsi-source -type f -name settings.gradle -printf '%h\n' | head -n 1);
           test -n "$project_root";
           cp -a "$project_root"/. .;
@@ -52,7 +52,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DSI-desktop-html-skin-apk-v20
+          name: DSI-desktop-html-skin-apk-v21
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
