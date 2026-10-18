@@ -1,0 +1,75 @@
+name: Build DSI Test APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Expand DSI source
+        shell: bash
+        run: |
+          set -e
+
+          archive=""
+
+          if [ -f "DSI-v0.14-dsi-avatar-test-source.zip" ]; then
+            archive="DSI-v0.14-dsi-avatar-test-source.zip"
+          else
+            echo "Source ZIP not found"
+            exit 1
+          fi
+
+          mkdir -p .dsi-source
+          unzip -q -o "$archive" -d .dsi-source
+
+          project_root="$(find .dsi-source -type f -name settings.gradle -printf '%h\n' | head -n 1)"
+
+          if [ -z "$project_root" ]; then
+            echo "Android project not found"
+            exit 1
+          fi
+
+          cp -a "$project_root"/. .
+
+          test -f settings.gradle
+          test -f app/build.gradle
+          test -f app/src/main/AndroidManifest.xml
+          test -f app/src/main/java/com/dsi/webviewtest/MainActivity.java
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android packages
+        run: |
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "8.9"
+
+      - name: Build APK
+        run: gradle --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DSI-v0.14-test-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
